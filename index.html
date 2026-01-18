@@ -1,0 +1,1959 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Salary Statement & Income Tax Calculator</title>
+  <meta name="theme-color" content="#667eea">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tax Calculator">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <!-- PDF.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  
+  <!-- ExcelJS for Professional Excel Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+  
+  <!-- FileSaver for downloads -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  
+  <!-- docx for Word Export -->
+  <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  </script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh; 
+      padding: 20px; 
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    
+    /* Developer Info Header */
+    .dev-header {
+      background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 12px 12px 0 0;
+      text-align: center;
+      margin-bottom: 0;
+    }
+    .dev-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 5px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .dev-header p {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+    .dev-header .app-title {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .dev-header .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    .card { 
+      background: #fff; 
+      border-radius: 12px; 
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15); 
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .card.no-top-radius { border-radius: 0 0 12px 12px; }
+    .card-header { 
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      color: white; 
+      padding: 14px 20px; 
+      font-weight: 700;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card-body { padding: 20px; }
+    
+    .controls { 
+      display: flex; 
+      gap: 12px; 
+      align-items: center; 
+      flex-wrap: wrap;
+      padding: 15px 20px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e9ecef;
+    }
+    input[type="file"] { 
+      padding: 10px 15px; 
+      background: #fff; 
+      border: 2px dashed #1e3c72; 
+      border-radius: 8px; 
+      cursor: pointer;
+    }
+    button { 
+      padding: 10px 18px; 
+      border: none; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-weight: 600; 
+      font-size: 13px;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary { background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(30,60,114,0.4); }
+    .btn-success { background: linear-gradient(135deg, #28a745, #20c997); color: white; }
+    .btn-success:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(40,167,69,0.4); }
+    .btn-info { background: linear-gradient(135deg, #17a2b8, #138496); color: white; }
+    .btn-info:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(23,162,184,0.4); }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-warning { background: #ffc107; color: #212529; }
+    .btn-secondary { background: #6c757d; color: white; }
+    
+    .status { 
+      margin-left: auto; 
+      padding: 8px 16px; 
+      background: #e9ecef; 
+      border-radius: 20px; 
+      font-size: 13px;
+    }
+    .status.success { background: #d4edda; color: #155724; }
+    .status.error { background: #f8d7da; color: #721c24; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+    }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label { font-weight: 600; font-size: 11px; color: #495057; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-group input, .form-group select {
+      padding: 10px 12px;
+      border: 1px solid #ced4da;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: #1e3c72;
+      box-shadow: 0 0 0 3px rgba(30,60,114,0.1);
+    }
+
+    .table-wrapper { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { border: 1px solid #dee2e6; padding: 8px 6px; }
+    th { 
+      background: linear-gradient(135deg, #1e3c72, #2a5298); 
+      color: white; 
+      text-align: center; 
+      font-weight: 600;
+      font-size: 11px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    td { text-align: right; }
+    td:first-child, td:nth-child(2) { text-align: center; }
+    td input {
+      width: 100%;
+      border: none;
+      background: transparent;
+      text-align: right;
+      padding: 4px;
+      font-size: 12px;
+      font-family: 'Consolas', monospace;
+    }
+    td input:focus { outline: none; background: #fff3cd; }
+    td input.month-input { text-align: left; }
+    tr:nth-child(even) td { background: #f8f9fa; }
+    tr:hover td { background: #e3f2fd; }
+    .total-row td { 
+      background: linear-gradient(135deg, #1e3c72, #2a5298) !important; 
+      color: white; 
+      font-weight: 700;
+    }
+    .delete-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1;
+    }
+    .delete-btn:hover { background: #c82333; }
+
+    .tax-section { margin-top: 10px; }
+    .tax-table { font-size: 13px; }
+    .tax-table th { background: #495057; }
+    .tax-table td { text-align: left; padding: 10px 12px; }
+    .tax-table td:last-child { text-align: right; font-family: 'Consolas', monospace; }
+    .tax-table .section-header td { background: #e9ecef; font-weight: 700; color: #1e3c72; }
+    .tax-table .sub-item td { padding-left: 30px; }
+    .tax-table .total-line td { background: #fff3cd; font-weight: 700; border-top: 2px solid #ffc107; }
+    .tax-table .grand-total td { background: linear-gradient(135deg, #28a745, #20c997); color: white; font-weight: 700; font-size: 14px; }
+    .tax-table .refund td { background: #d4edda; color: #155724; font-weight: 700; }
+    .tax-table .payable td { background: #f8d7da; color: #721c24; font-weight: 700; }
+
+    .tax-input {
+      width: 120px;
+      padding: 6px 10px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      text-align: right;
+      font-family: 'Consolas', monospace;
+    }
+    .tax-input:focus { outline: none; border-color: #1e3c72; background: #fff3cd; }
+
+    .tabs { display: flex; gap: 5px; padding: 0 20px; background: #f8f9fa; }
+    .tab {
+      padding: 12px 20px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      color: #6c757d;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab:hover { color: #1e3c72; }
+    .tab.active { color: #1e3c72; border-bottom-color: #1e3c72; background: white; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .export-section {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 15px 20px;
+      background: linear-gradient(135deg, #f0f4ff 0%, #e8f4f8 100%);
+      border-top: 1px solid #dee2e6;
+    }
+
+    .loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .loading.show { display: flex; }
+    .loading-content {
+      background: white;
+      padding: 30px 50px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid #1e3c72;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 15px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .no-print { display: none !important; }
+      .card { box-shadow: none; margin: 0; }
+      .dev-header { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div class="loading" id="loading">
+  <div class="loading-content">
+    <div class="spinner"></div>
+    <p id="loadingText">Generating document...</p>
+  </div>
+</div>
+
+<div class="container">
+  <!-- Developer Header -->
+  <div class="dev-header">
+    <h1>👨‍💻 Developed by: Prof. O.P. Sheoran</h1>
+    <p>CCS HAU, Hisar</p>
+    <div class="app-title">📊 Salary Statement & Income Tax Calculator</div>
+    <span class="badge">FY 2025-26 | New Regime 115BAC</span>
+  </div>
+
+  <!-- Main Controls Card -->
+  <div class="card no-top-radius">
+    <div class="controls no-print">
+      <input id="file" type="file" accept="application/pdf" />
+      <button class="btn-primary" id="btnParse">📄 Parse PDF</button>
+      <span class="status" id="status">Upload PDF to begin</span>
+    </div>
+    <div class="export-section no-print">
+      <button class="btn-success" id="btnExportExcel">📊 Export to Excel</button>
+      <button class="btn-info" id="btnExportWord">📝 Export to Word</button>
+      <button class="btn-warning" onclick="window.print()">🖨️ Print</button>
+    </div>
+  </div>
+<!-- Add this dropdown and buttons wherever you want in your form -->
+<div style="margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 5px;">
+  <label><b>Saved Employees:</b></label>
+  <select id="employeeSelect" style="padding: 5px; min-width: 200px; margin: 0 10px;">
+    <option value="">-- Select Employee --</option>
+  </select>
+  <button type="button" onclick="loadSelectedEmployee()" style="padding: 5px 15px;">Load</button>
+  <button type="button" onclick="saveCurrentEmployee()" style="padding: 5px 15px; background: #4CAF50; color: white;">Save</button>
+  <button type="button" onclick="deleteSelectedEmployee()" style="padding: 5px 15px; background: #f44336; color: white;">Delete</button>
+</div>
+  <!-- School/Office Information -->
+  <div class="card">
+    <div class="card-header">🏫 School/Office Information</div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>School/Office Name</label>
+          <input type="text" id="schoolName" value="GOVERNMENT SENIOR SECONDARY SCHOOL" placeholder="Enter school name">
+        </div>
+        <div class="form-group">
+          <label>Address</label>
+          <input type="text" id="schoolAddress" value="HISAR, HARYANA" placeholder="Enter address">
+        </div>
+        <div class="form-group">
+          <label>Financial Year</label>
+          <select id="empFY">
+            <option value="2025-26" selected>2025-26</option>
+            <option value="2024-25">2024-25</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Employee Information -->
+  <div class="card">
+    <div class="card-header">👤 Employee Information</div>
+    <div class="card-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Employee Name</label>
+          <input type="text" id="empName" value="" placeholder="Enter name">
+        </div>
+        <div class="form-group">
+          <label>Designation</label>
+          <input type="text" id="empDesig" value="" placeholder="Enter designation">
+        </div>
+        <div class="form-group">
+          <label>Employee ID</label>
+          <input type="text" id="empId" value="" placeholder="Enter ID">
+        </div>
+        <div class="form-group">
+          <label>PAN Number</label>
+          <input type="text" id="empPan" value="" placeholder="Enter PAN">
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          <input type="text" id="empDept" value="Education (Elementary)" placeholder="Enter department">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs for Salary & Tax -->
+  <div class="card">
+    <div class="tabs no-print">
+      <button class="tab active" data-tab="salary">💰 Salary Statement</button>
+      <button class="tab" data-tab="tax">📋 Income Tax Calculation</button>
+    </div>
+
+    <!-- Salary Statement Tab -->
+    <div class="tab-content active" id="tab-salary">
+      <div class="card-body">
+        <div style="margin-bottom: 15px;" class="no-print">
+          <button class="btn-success" id="btnAddRow">➕ Add Row</button>
+          <button class="btn-secondary" id="btnRecalculate">🔄 Recalculate</button>
+        </div>
+        <div class="table-wrapper">
+          <table id="salaryTable">
+            <thead>
+              <tr>
+                <th style="width:35px;">Del</th>
+                <th style="width:120px;">Month & Year</th>
+                <th>Basic Pay</th>
+                <th>HRA</th>
+                <th>ADA (DA)</th>
+                <th>FMA</th>
+                <th>TOTAL</th>
+                <th>GPF (SUB)</th>
+                <th>GPF (OPR)</th>
+                <th>GIS</th>
+                <th>TOTAL DED</th>
+                <th>ITAX</th>
+              </tr>
+            </thead>
+            <tbody id="salaryBody">
+              <tr><td colspan="12" style="text-align:center;color:#666;padding:30px;">Upload a PDF or add rows manually</td></tr>
+            </tbody>
+            <tfoot id="salaryFoot"></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tax Calculation Tab -->
+    <div class="tab-content" id="tab-tax">
+      <div class="card-body tax-section">
+        <h3 style="text-align:center; margin-bottom:5px; color:#1e3c72;">
+          PERFORMA FOR CALCULATION OF INCOME TAX FOR THE YEAR <span id="taxYear">2025-26</span>
+        </h3>
+        <p style="text-align:center; font-size:12px; color:#666; margin-bottom:15px;">
+          (To be submitted in Triplicate along with Attested Photostat copies of savings)
+        </p>
+        <p style="text-align:center; font-weight:600; color:#28a745; margin-bottom:20px;">
+          New Regime (115BAC)
+        </p>
+        <table class="tax-table" id="taxTable">
+          <tbody id="taxBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Debug -->
+  <details class="card no-print">
+    <summary class="card-header" style="cursor:pointer;">🔍 Debug Output</summary>
+    <div class="card-body">
+      <pre id="debug" style="background:#0f172a; color:#e5e7eb; padding:15px; border-radius:8px; overflow:auto; max-height:200px; font-size:11px;">No debug data</pre>
+    </div>
+  </details>
+</div>
+
+<script>
+// ========== GLOBAL STATE ==========
+let salaryData = [];
+let taxInputs = { hraExempt: 0, childEduAllow: 0, conveyanceAllow: 0, housePropertyIncome: 0, homeLoanInterest: 0, otherIncome: 0, nps80ccd2: 0 };
+let calculatedTaxData = {};
+
+const fmt = (n) => {
+  // Null/undefined/empty/' - '/'-' => dash
+  if (n === null || n === undefined) return ' - ';
+  if (n === '' || n === ' - ' || n === '-') return ' - ';
+
+  // Strings: strip commas, test numeric
+  if (typeof n === 'string') {
+    const t = n.trim();
+    if (t === '' || t === '-' || t === ' - ') return ' - ';
+    const parsed = Number(t.replace(/,/g, ''));
+    if (isNaN(parsed) || parsed === 0) return ' - ';
+    return parsed.toLocaleString('en-IN');
+  }
+
+  // Numbers
+  if (typeof n === 'number') {
+    if (isNaN(n) || n === 0) return ' - ';
+    return n.toLocaleString('en-IN');
+  }
+
+  return ' - ';
+};
+const parseNum = (s) => parseInt(String(s).replace(/,/g, ''), 10) || 0;
+
+function showLoading(text = 'Generating document...') {
+  document.getElementById('loadingText').textContent = text;
+  document.getElementById('loading').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loading').classList.remove('show');
+}
+
+// ========== TAB SWITCHING ==========
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'tax') calculateTax();
+  });
+});
+
+// ========== PDF PARSING FUNCTIONS ==========
+function extractCommaNums(text) {
+  const m = text.match(/\d{1,3}(?:,\d{3})+/g);
+  return (m || []).map(x => parseInt(x.replaceAll(",", ""), 10)).filter(Number.isFinite);
+}
+
+function extractAllNums(text) {
+  const m = text.match(/\d{1,3}(?:,\d{3})+|\d+/g);
+  return (m || []).map(x => parseInt(x.replaceAll(",", ""), 10)).filter(Number.isFinite);
+}
+
+function extractNumTokens(text) {
+  return (text.match(/\d{1,3}(?:,\d{3})+|\d+/g) || []);
+}
+
+function tokenToInt(tok) {
+  return parseInt(tok.replaceAll(",", ""), 10);
+}
+
+function isStartLine(text) {
+  return /^\s*\d+\s+(?:(?:Jan|Feb|Mar|Apr|May|Jun|June|Jul|July|Aug|Sep|Sept|Oct|Nov|Dec)\s*,\s*\d{4}-\d{2}\b|(Ist|IInd)\s+DA\b)/i.test(text);
+}
+
+function sliceBlocks(rawLines) {
+  const lines = rawLines.map(s => (s || "").trim()).filter(s => s.length)
+    .filter(s => !/^Education\s*\(/i.test(s))
+    .filter(s => !/^ANNUAL STATEMENT/i.test(s))
+    .filter(s => !/^DUES\b/i.test(s))
+    .filter(s => !/^Sr\b/i.test(s))
+    .filter(s => !/^No\s+Year/i.test(s))
+    .filter(s => !/^Grand Total\b/i.test(s))
+    .filter(s => !/^Rupees\b/i.test(s));
+
+  const blocks = [];
+  let i = 0;
+  while (i < lines.length) {
+    if (!isStartLine(lines[i])) { i++; continue; }
+    let j = i + 1;
+    while (j < lines.length && !isStartLine(lines[j])) j++;
+    blocks.push(lines.slice(i, j));
+    i = j;
+  }
+  return { lines, blocks };
+}
+
+function monthLabelFromBlock(block) {
+  const first = block[0];
+  const m = first.match(/^\s*\d+\s+((?:Jan|Feb|Mar|Apr|May|Jun|June|Jul|July|Aug|Sep|Sept|Oct|Nov|Dec)\s*,\s*\d{4}-\d{2})\b/i);
+  if (m) return m[1].replace(/\s+/g, "");
+  const da = first.match(/^\s*\d+\s+((Ist|IInd)\s+DA)\b/i);
+  if (da) {
+    const arrearLine = block.find(l => /Arrear,\s*\d{4}-\d{2}/i.test(l)) || "";
+    const y = arrearLine.match(/Arrear,\s*\d{4}-\d{2}/i);
+    return y ? `${da[1]} ${y[0].replace(/\s+/g, "")}` : `${da[1]} Arrear`;
+  }
+  return first.trim().slice(0, 30);
+}
+
+function parseMainLine(firstLine, monthLabel) {
+  const pos = firstLine.indexOf(monthLabel);
+  const afterMonth = pos >= 0 ? firstLine.slice(pos + monthLabel.length) : firstLine;
+  const beforeHREDU = afterMonth.split(/HREDU/i)[0];
+  const tokens = extractNumTokens(beforeHREDU).map(tokenToInt).filter(Number.isFinite);
+  const dues9 = tokens.slice(0, 9);
+  const basic = dues9[0] || 0, hra = dues9[3] || 0, total = dues9[8] || 0;
+  const commaNums = extractCommaNums(firstLine);
+  let netPay = commaNums.length ? commaNums[commaNums.length - 1] : 0;
+  let totalDed = commaNums.length >= 2 ? commaNums[commaNums.length - 2] : 0;
+  if (totalDed >= total || totalDed === netPay) totalDed = 0;
+  let gis = 0, itax = 0;
+  const parts = firstLine.split(/HREDU/i);
+  if (parts.length >= 2) {
+    const tail = parts[1];
+    const tailTokensRaw = extractNumTokens(tail);
+    const tailTokens = tailTokensRaw.map(t => ({ raw: t, v: tokenToInt(t), comma: t.includes(",") })).filter(o => Number.isFinite(o.v));
+    const tdIdx = tailTokens.findIndex(o => o.comma && o.v === totalDed);
+    const subTail = tdIdx >= 0 ? tailTokens.slice(0, tdIdx) : tailTokens;
+    for (let k = subTail.length - 1; k >= 0; k--) {
+      if (!subTail[k].comma && subTail[k].v > 0 && subTail[k].v <= 500) { gis = subTail[k].v; break; }
+    }
+    if (gis > 0) {
+      const gisPos = subTail.findIndex(o => !o.comma && o.v === gis);
+      for (let k = gisPos + 1; k < subTail.length; k++) {
+        if (subTail[k].comma && subTail[k].v >= 1000) { itax = subTail[k].v; break; }
+      }
+    }
+    if (!itax) {
+      const blacklist = new Set([basic, hra, total, totalDed, netPay]);
+      for (let k = subTail.length - 1; k >= 0; k--) {
+        if (subTail[k].comma && !blacklist.has(subTail[k].v) && subTail[k].v >= 1000) { itax = subTail[k].v; break; }
+      }
+    }
+  }
+  return { basic, hra, total, totalDed, gis, itax, netPay };
+}
+
+function parseCityLine(block) {
+  const line = block.find(l => /^[A-Za-z]/.test(l) && /\d+/.test(l)) || "";
+  if (!line) return { fma: 0, gpfSub: 0, gpfOpr: 0 };
+  const allNums = extractAllNums(line);
+  const fmaCandidates = allNums.filter(v => v > 0 && v <= 3000);
+  const fma = fmaCandidates.length > 0 ? fmaCandidates[0] : 0;
+  const commaNums = extractCommaNums(line);
+  const gpfLike = commaNums.filter(v => v >= 5000 && v <= 20000).sort((a, b) => a - b);
+  return { fma, gpfSub: gpfLike[0] || 0, gpfOpr: gpfLike[1] || 0 };
+}
+
+function parseDdoLine(block) {
+  const line = block.find(l => /^\s*\d{4}\b/.test(l) && /\d{1,3}(?:,\d{3})+/.test(l)) || "";
+  if (!line) return 0;
+  return extractCommaNums(line)[0] || 0;
+}
+
+function parseBlock(block) {
+  const month = monthLabelFromBlock(block);
+  const isArrear = /arrear/i.test(month);
+  if (isArrear) {
+    const amt = extractCommaNums(block[0])[0] || 0;
+    return { month, basic: 0, hra: 0, ada: amt, fma: 0, total: amt, gpfSub: 0, gpfOpr: 0, gis: 0, totalDed: 0, itax: 0 };
+  }
+  const main = parseMainLine(block[0], month);
+  const city = parseCityLine(block);
+  const ada = parseDdoLine(block);
+  return { month, basic: main.basic, hra: main.hra, ada, fma: city.fma, total: main.total, gpfSub: city.gpfSub, gpfOpr: city.gpfOpr, gis: main.gis, totalDed: main.totalDed, itax: main.itax };
+}
+
+async function extractLinesFromPdf(arrayBuffer) {
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const allItems = [];
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    tc.items.forEach(it => {
+      const str = (it.str || "").trim();
+      if (str) allItems.push({ str, page: p, x: Math.round(it.transform[4]), y: Math.round(it.transform[5]) });
+    });
+  }
+  allItems.sort((a, b) => (a.page - b.page) || (b.y - a.y) || (a.x - b.x));
+  const lines = [];
+  let cur = [], lastY = null;
+  for (const item of allItems) {
+    if (lastY === null || Math.abs(item.y - lastY) <= 3) cur.push(item);
+    else { cur.sort((a, b) => a.x - b.x); lines.push(cur.map(i => i.str).join(" ")); cur = [item]; }
+    lastY = item.y;
+  }
+  if (cur.length) { cur.sort((a, b) => a.x - b.x); lines.push(cur.map(i => i.str).join(" ")); }
+  return lines;
+}
+
+function extractEmployeeInfo(rawLines) {
+  for (let line of rawLines) {
+    if (/[A-Z]{5}\d{4}[A-Z]/.test(line)) {
+      const parts = line.split(',').map(p => p.trim());
+      if (parts.length >= 2) {
+        const nameDesig = parts[0].split(/\s+/);
+        document.getElementById('empName').value = nameDesig[0] || '';
+        document.getElementById('empDesig').value = nameDesig.slice(1).join(' ') || '';
+        document.getElementById('empId').value = parts[1] || '';
+        if (parts.length > 2) document.getElementById('empPan').value = parts[parts.length - 1] || '';
+      }
+      break;
+    }
+  }
+}
+
+// ========== SALARY TABLE FUNCTIONS ==========
+function renderSalaryTable() {
+  const tbody = document.getElementById('salaryBody');
+  const tfoot = document.getElementById('salaryFoot');
+  tbody.innerHTML = '';
+  tfoot.innerHTML = '';
+  if (salaryData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:#666;padding:30px;">No data. Upload PDF or add rows.</td></tr>';
+    return;
+  }
+  salaryData.forEach((row, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><button class="delete-btn" onclick="deleteRow(${idx})">×</button></td>
+      <td><input type="text" class="month-input" value="${row.month}" onchange="updateRow(${idx}, 'month', this.value)"></td>
+      <td><input type="text" value="${row.basic}" onchange="updateRow(${idx}, 'basic', this.value)"></td>
+      <td><input type="text" value="${row.hra}" onchange="updateRow(${idx}, 'hra', this.value)"></td>
+      <td><input type="text" value="${row.ada}" onchange="updateRow(${idx}, 'ada', this.value)"></td>
+      <td><input type="text" value="${row.fma}" onchange="updateRow(${idx}, 'fma', this.value)"></td>
+      <td><input type="text" value="${row.total}" onchange="updateRow(${idx}, 'total', this.value)"></td>
+      <td><input type="text" value="${row.gpfSub}" onchange="updateRow(${idx}, 'gpfSub', this.value)"></td>
+      <td><input type="text" value="${row.gpfOpr}" onchange="updateRow(${idx}, 'gpfOpr', this.value)"></td>
+      <td><input type="text" value="${row.gis}" onchange="updateRow(${idx}, 'gis', this.value)"></td>
+      <td><input type="text" value="${row.totalDed}" onchange="updateRow(${idx}, 'totalDed', this.value)"></td>
+      <td><input type="text" value="${row.itax}" onchange="updateRow(${idx}, 'itax', this.value)"></td>`;
+    tbody.appendChild(tr);
+  });
+  const totals = calculateTotals();
+  const tr = document.createElement('tr');
+  tr.className = 'total-row';
+  tr.innerHTML = `<td></td><td style="text-align:center;font-weight:700;">GRAND TOTAL</td>
+    <td>${fmt(totals.basic)}</td><td>${fmt(totals.hra)}</td><td>${fmt(totals.ada)}</td><td>${fmt(totals.fma)}</td>
+    <td>${fmt(totals.total)}</td><td>${fmt(totals.gpfSub)}</td><td>${fmt(totals.gpfOpr)}</td><td>${fmt(totals.gis)}</td>
+    <td>${fmt(totals.totalDed)}</td><td>${fmt(totals.itax)}</td>`;
+  tfoot.appendChild(tr);
+}
+
+function calculateTotals() {
+  return salaryData.reduce((acc, row) => {
+    ['basic','hra','ada','fma','total','gpfSub','gpfOpr','gis','totalDed','itax'].forEach(k => acc[k] += parseNum(row[k]));
+    return acc;
+  }, { basic:0,hra:0,ada:0,fma:0,total:0,gpfSub:0,gpfOpr:0,gis:0,totalDed:0,itax:0 });
+}
+
+function updateRow(idx, field, value) { salaryData[idx][field] = field === 'month' ? value : parseNum(value); renderSalaryTable(); }
+function deleteRow(idx) { salaryData.splice(idx, 1); renderSalaryTable(); }
+function addRow() { salaryData.push({ month:'New Entry',basic:0,hra:0,ada:0,fma:0,total:0,gpfSub:0,gpfOpr:0,gis:0,totalDed:0,itax:0 }); renderSalaryTable(); }
+
+// ========== TAX CALCULATION ==========
+function calculateTax() {
+  const totals = calculateTotals();
+  const fy = document.getElementById('empFY').value;
+  document.getElementById('taxYear').textContent = fy;
+  const grossIncome = totals.total;
+  const standardDeduction = 75000;
+  const afterStdDed = Math.max(0, grossIncome - standardDeduction);
+  const totalExemptions = parseNum(taxInputs.hraExempt) + parseNum(taxInputs.childEduAllow) + parseNum(taxInputs.conveyanceAllow);
+  const incomeFromSalary = Math.max(0, afterStdDed - totalExemptions);
+  const housePropertyIncome = parseNum(taxInputs.housePropertyIncome);
+  const homeLoanInterest = Math.min(parseNum(taxInputs.homeLoanInterest), 200000);
+  const afterHouseProp = incomeFromSalary + housePropertyIncome - homeLoanInterest;
+  const otherIncome = parseNum(taxInputs.otherIncome);
+  const grossTotalIncome = afterHouseProp + otherIncome;
+  const nps80ccd2 = parseNum(taxInputs.nps80ccd2);
+  const totalDeductions = nps80ccd2;
+  const taxableIncome = Math.max(0, grossTotalIncome - totalDeductions);
+  const taxableIncomeRounded = Math.round(taxableIncome / 10) * 10;
+
+  let remainingIncome = taxableIncomeRounded, totalTax = 0;
+  const slabs = [{min:0,max:400000,rate:0},{min:400001,max:800000,rate:5},{min:800001,max:1200000,rate:10},{min:1200001,max:1600000,rate:15},{min:1600001,max:2000000,rate:20},{min:2000001,max:2400000,rate:25},{min:2400001,max:Infinity,rate:30}];
+  const slabDetails = [];
+  for (const slab of slabs) {
+    if (remainingIncome <= 0) { slabDetails.push({...slab,taxableAmount:0,tax:0}); continue; }
+    const taxableInSlab = Math.min(remainingIncome, slab.max === Infinity ? remainingIncome : slab.max - slab.min + 1);
+    const taxForSlab = Math.round(taxableInSlab * slab.rate / 100);
+    slabDetails.push({...slab,taxableAmount:taxableInSlab,tax:taxForSlab});
+    totalTax += taxForSlab;
+    remainingIncome -= taxableInSlab;
+  }
+  const rebate87a = taxableIncomeRounded <= 1200000 ? totalTax : 0;
+  const taxAfterRebate = totalTax - rebate87a;
+  const eduCess = Math.round(taxAfterRebate * 4 / 100);
+  const totalTaxPayable = taxAfterRebate + eduCess;
+  const taxDeducted = totals.itax;
+  const balance = taxDeducted - totalTaxPayable;
+  const isRefund = balance > 0;
+
+  calculatedTaxData = { grossIncome,standardDeduction,afterStdDed,totalExemptions,incomeFromSalary,housePropertyIncome,homeLoanInterest,afterHouseProp,otherIncome,grossTotalIncome,nps80ccd2,totalDeductions,taxableIncomeRounded,slabDetails,totalTax,rebate87a,taxAfterRebate,eduCess,totalTaxPayable,taxDeducted,balance,isRefund,gpfTotal:totals.gpfSub+totals.gpfOpr,gisTotal:totals.gis };
+  renderTaxTable(calculatedTaxData);
+}
+
+function renderTaxTable(data) {
+  const tbody = document.getElementById('taxBody');
+  const slabLabels = ['First ₹4,00,000','₹4,00,001 to ₹8,00,000','₹8,00,001 to ₹12,00,000','₹12,00,001 to ₹16,00,000','₹16,00,001 to ₹20,00,000','₹20,00,001 to ₹24,00,000','Above ₹24,00,000'];
+  let html = `
+    <tr class="section-header"><td colspan="3">A. Salary and Other Benefits:</td></tr>
+    <tr><td></td><td>Gross Income (Total Salary)</td><td>₹ ${fmt(data.grossIncome)}</td></tr>
+    <tr><td></td><td>Less: Standard Deduction</td><td>₹ ${fmt(data.standardDeduction)}</td></tr>
+    <tr><td></td><td><strong>Balance</strong></td><td><strong>₹ ${fmt(data.afterStdDed)}</strong></td></tr>
+    <tr class="section-header"><td colspan="3">B. Less: Income exempt u/s 10</td></tr>
+    <tr class="sub-item"><td>1</td><td>House Rent Allowance</td><td><input type="number" class="tax-input" value="${taxInputs.hraExempt}" onchange="updateTaxInput('hraExempt', this.value)"></td></tr>
+    <tr class="sub-item"><td>2</td><td>Children Education Allowance</td><td><input type="number" class="tax-input" value="${taxInputs.childEduAllow}" onchange="updateTaxInput('childEduAllow', this.value)"></td></tr>
+    <tr class="sub-item"><td>3</td><td>Conveyance Allowance</td><td><input type="number" class="tax-input" value="${taxInputs.conveyanceAllow}" onchange="updateTaxInput('conveyanceAllow', this.value)"></td></tr>
+    <tr><td></td><td><strong>Total Exemptions</strong></td><td><strong>₹ ${fmt(data.totalExemptions)}</strong></td></tr>
+    <tr class="total-line"><td></td><td><strong>Income from Salary</strong></td><td><strong>₹ ${fmt(data.incomeFromSalary)}</strong></td></tr>
+    <tr class="section-header"><td colspan="3">C. Add: Income from House Property</td></tr>
+    <tr class="sub-item"><td></td><td>Rental Income</td><td><input type="number" class="tax-input" value="${taxInputs.housePropertyIncome}" onchange="updateTaxInput('housePropertyIncome', this.value)"></td></tr>
+    <tr class="section-header"><td colspan="3">D. Less: Home Loan Interest (Max ₹2,00,000)</td></tr>
+    <tr class="sub-item"><td></td><td>Interest Paid</td><td><input type="number" class="tax-input" value="${taxInputs.homeLoanInterest}" onchange="updateTaxInput('homeLoanInterest', this.value)"></td></tr>
+    <tr><td></td><td><strong>Balance</strong></td><td><strong>₹ ${fmt(data.afterHouseProp)}</strong></td></tr>
+    <tr class="section-header"><td colspan="3">E. Add: Income from Other Sources</td></tr>
+    <tr class="sub-item"><td></td><td>Interest from Bank, FD, etc.</td><td><input type="number" class="tax-input" value="${taxInputs.otherIncome}" onchange="updateTaxInput('otherIncome', this.value)"></td></tr>
+    <tr class="total-line"><td colspan="2"><strong>F. Gross Total Income</strong></td><td><strong>₹ ${fmt(data.grossTotalIncome)}</strong></td></tr>
+    <tr class="section-header"><td colspan="3">G. Deductions (Only 80CCD(2) in New Regime)</td></tr>
+    <tr class="sub-item"><td>i)</td><td>GPF/PRAN (₹${fmt(data.gpfTotal)})</td><td style="color:#999;">Not Allowed</td></tr>
+    <tr class="sub-item"><td>ii)</td><td>GIS (₹${fmt(data.gisTotal)})</td><td style="color:#999;">Not Allowed</td></tr>
+    <tr class="sub-item"><td>xi)</td><td><strong>NPS 80CCD(2) - Employer</strong></td><td><input type="number" class="tax-input" value="${taxInputs.nps80ccd2}" onchange="updateTaxInput('nps80ccd2', this.value)"></td></tr>
+    <tr><td></td><td><strong>Total Deductions</strong></td><td><strong>₹ ${fmt(data.totalDeductions)}</strong></td></tr>
+    <tr class="total-line"><td colspan="2"><strong>I. Taxable Income</strong></td><td><strong>₹ ${fmt(data.taxableIncomeRounded)}</strong></td></tr>
+    <tr class="section-header"><td colspan="3">J. Tax Computation (New Regime 115BAC)</td></tr>`;
+  data.slabDetails.forEach((slab, i) => {
+    html += `<tr class="sub-item"><td>${['i)','ii)','iii)','iv)','v)','vi)','vii)'][i]}</td><td>${slabLabels[i]} @ ${slab.rate}%</td><td>${slab.taxableAmount > 0 ? `₹ ${fmt(slab.taxableAmount)} → ₹ ${fmt(slab.tax)}` : '-'}</td></tr>`;
+  });
+  html += `
+    <tr><td></td><td><strong>Total Tax</strong></td><td><strong>₹ ${fmt(data.totalTax)}</strong></td></tr>
+    <tr><td></td><td>Less: Rebate u/s 87A</td><td>₹ ${fmt(data.rebate87a)}</td></tr>
+    <tr class="total-line"><td></td><td><strong>Tax After Rebate</strong></td><td><strong>₹ ${fmt(data.taxAfterRebate)}</strong></td></tr>
+    <tr><td><strong>K</strong></td><td>Education Cess @ 4%</td><td>₹ ${fmt(data.eduCess)}</td></tr>
+    <tr class="grand-total"><td><strong>L</strong></td><td><strong>Total Tax Payable</strong></td><td><strong>₹ ${fmt(data.totalTaxPayable)}</strong></td></tr>
+    <tr><td><strong>M</strong></td><td>Tax Deducted at Source</td><td>₹ ${fmt(data.taxDeducted)}</td></tr>
+    <tr class="${data.isRefund ? 'refund' : 'payable'}"><td><strong>N</strong></td><td><strong>${data.isRefund ? 'Refund Due' : 'Balance Payable'}</strong></td><td><strong>₹ ${fmt(Math.abs(data.balance))}</strong></td></tr>`;
+  tbody.innerHTML = html;
+}
+
+function updateTaxInput(field, value) { taxInputs[field] = parseNum(value); calculateTax(); }
+
+// ========== EXCEL EXPORT (ExcelJS - Professional) ==========
+async function exportToExcel() {
+  showLoading('Generating Excel file...');
+  
+  try {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Prof. O.P. Sheoran, CCS HAU Hisar';
+    workbook.created = new Date();
+    
+    const totals = calculateTotals();
+    const schoolName = document.getElementById('schoolName').value;
+    const schoolAddress = document.getElementById('schoolAddress').value;
+    const empName = document.getElementById('empName').value;
+    const empDesig = document.getElementById('empDesig').value;
+    const empId = document.getElementById('empId').value;
+    const empPan = document.getElementById('empPan').value;
+    const empDept = document.getElementById('empDept').value;
+    const fy = document.getElementById('empFY').value;
+    const d = calculatedTaxData;
+
+    // ===== SHEET 1: SALARY STATEMENT (Landscape) =====
+    const ws1 = workbook.addWorksheet('Salary Statement', {
+      pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5, header: 0.3, footer: 0.3 } }
+    });
+
+    ws1.columns = [
+      { width: 5 }, { width: 15 }, { width: 11 }, { width: 9 }, { width: 11 }, { width: 9 },
+      { width: 11 }, { width: 10 }, { width: 10 }, { width: 7 }, { width: 11 }, { width: 11 }
+    ];
+
+    // Developer Info
+    ws1.mergeCells('A1:L1');
+    ws1.getCell('A1').value = 'Developed by: Prof. O.P. Sheoran, CCS HAU, Hisar';
+    ws1.getCell('A1').font = { bold: true, size: 10, color: { argb: 'FF1E3C72' } };
+    ws1.getCell('A1').alignment = { horizontal: 'right' };
+
+    // School Name
+    ws1.mergeCells('A2:L2');
+    ws1.getCell('A2').value = schoolName;
+    ws1.getCell('A2').font = { bold: true, size: 14 };
+    ws1.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+    // Address
+    ws1.mergeCells('A3:L3');
+    ws1.getCell('A3').value = schoolAddress;
+    ws1.getCell('A3').font = { size: 11 };
+    ws1.getCell('A3').alignment = { horizontal: 'center' };
+
+    // Title
+    ws1.mergeCells('A4:L4');
+    ws1.getCell('A4').value = `ANNUAL SALARY STATEMENT - FINANCIAL YEAR ${fy}`;
+    ws1.getCell('A4').font = { bold: true, size: 12 };
+    ws1.getCell('A4').alignment = { horizontal: 'center' };
+    ws1.getCell('A4').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE9ECEF' } };
+
+    // Employee Info
+    ws1.mergeCells('A5:C5'); ws1.getCell('A5').value = `Employee: ${empName}`;
+    ws1.mergeCells('D5:F5'); ws1.getCell('D5').value = `Designation: ${empDesig}`;
+    ws1.mergeCells('G5:I5'); ws1.getCell('G5').value = `ID: ${empId}`;
+    ws1.mergeCells('J5:L5'); ws1.getCell('J5').value = `PAN: ${empPan}`;
+    ws1.getRow(5).font = { bold: true, size: 10 };
+
+    ws1.mergeCells('A6:F6'); ws1.getCell('A6').value = `Department: ${empDept}`;
+    ws1.getRow(6).font = { size: 10 };
+
+    // Headers
+    const headers = ['S.No.', 'Month & Year', 'Basic Pay', 'HRA', 'ADA (DA)', 'FMA', 'TOTAL', 'GPF (SUB)', 'GPF (OPR)', 'GIS', 'TOTAL DED', 'ITAX'];
+    const headerRow = ws1.getRow(8);
+    headers.forEach((h, i) => {
+      const cell = headerRow.getCell(i + 1);
+      cell.value = h;
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 9 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3C72' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+    });
+    headerRow.height = 22;
+
+    // Data rows
+    salaryData.forEach((row, idx) => {
+      const dataRow = ws1.getRow(9 + idx);
+      const values = [idx + 1, row.month, parseNum(row.basic), parseNum(row.hra), parseNum(row.ada), parseNum(row.fma), parseNum(row.total), parseNum(row.gpfSub), parseNum(row.gpfOpr), parseNum(row.gis), parseNum(row.totalDed), parseNum(row.itax)];
+      values.forEach((v, i) => {
+        const cell = dataRow.getCell(i + 1);
+        cell.value = v;
+        cell.font = { size: 9 };
+        cell.alignment = { horizontal: i < 2 ? 'center' : 'right', vertical: 'middle' };
+        cell.border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+        if (i >= 2) cell.numFmt = '#,##0';
+        if (idx % 2 === 1) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8F9FA' } };
+      });
+    });
+
+    // Total row
+    const totalRowNum = 9 + salaryData.length;
+    const totalRow = ws1.getRow(totalRowNum);
+    const totalValues = ['', 'GRAND TOTAL', totals.basic, totals.hra, totals.ada, totals.fma, totals.total, totals.gpfSub, totals.gpfOpr, totals.gis, totals.totalDed, totals.itax];
+    totalValues.forEach((v, i) => {
+      const cell = totalRow.getCell(i + 1);
+      cell.value = v;
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 9 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3C72' } };
+      cell.alignment = { horizontal: i < 2 ? 'center' : 'right', vertical: 'middle' };
+      cell.border = { top: { style: 'medium' }, bottom: { style: 'medium' }, left: { style: 'thin' }, right: { style: 'thin' } };
+      if (i >= 2) cell.numFmt = '#,##0';
+    });
+
+    const sigRowNum = totalRowNum + 3;
+    ws1.mergeCells(`A${sigRowNum}:F${sigRowNum}`);
+    ws1.getCell(`A${sigRowNum}`).value = 'Signature of DDO';
+    ws1.getCell(`A${sigRowNum}`).alignment = { horizontal: 'center' };
+    ws1.mergeCells(`G${sigRowNum}:L${sigRowNum}`);
+    ws1.getCell(`G${sigRowNum}`).value = 'Signature of Employee';
+    ws1.getCell(`G${sigRowNum}`).alignment = { horizontal: 'center' };
+
+    // ===== SHEET 2: TAX CALCULATION (Exact Format - Optimized) =====
+    const ws2 = workbook.addWorksheet('Income Tax Calculation', {
+      pageSetup: { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 1, margins: { left: 0.5, right: 0.5, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 } }
+    });
+
+    // Optimized column widths - 10 columns total
+    ws2.columns = [
+      { width: 3.5 },   // A - Section letter
+      { width: 4 },     // B - Sub item number
+      { width: 42 },    // C - Description (wide)
+      { width: 7 },     // D - Rate
+      { width: 10 },    // E - Amount
+      { width: 10 },    // F - Tax/value
+      { width: 9 },     // G - Extra
+      { width: 9 },     // H - Rs. col 1
+      { width: 10 },    // I - Rs. col 2
+      { width: 10 }     // J - Rs. col 3 (final)
+    ];
+
+    const border = { top: { style: 'thin' }, bottom: { style: 'thin' }, left: { style: 'thin' }, right: { style: 'thin' } };
+    const defFont = { name: 'Arial', size: 10 };
+    const boldFont = { name: 'Arial', size: 10, bold: true };
+    const smallFont = { name: 'Arial', size: 9 };
+
+    let r = 1;
+
+    // Helper function
+    const setCell = (row, col, value, options = {}) => {
+      const cell = ws2.getCell(row, col);
+      cell.value = value;
+      cell.font = options.bold ? boldFont : (options.small ? smallFont : defFont);
+      cell.alignment = { 
+        horizontal: options.align || 'left', 
+        vertical: 'middle',
+        wrapText: options.wrap || false
+      };
+      if (options.fill) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: options.fill } };
+      if (options.border !== false) cell.border = border;
+      if (options.numFmt) cell.numFmt = options.numFmt;
+    };
+
+    const formatAmt = (val) => val ? val : ' - ';
+
+    // Developer info
+    ws2.mergeCells(`A${r}:J${r}`);
+    setCell(r, 1, 'Developed by: Prof. O.P. Sheoran, CCS HAU, Hisar', { bold: true, align: 'right', border: false });
+    ws2.getCell(`A${r}`).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF1E3C72' } };
+    r++;
+
+    // Title
+    ws2.mergeCells(`A${r}:J${r}`);
+    setCell(r, 1, `PERFORMA FOR CALCULATION OF INCOME TAX FOR THE YEAR  ${fy}`, { bold: true, align: 'center', border: false });
+    ws2.getCell(`A${r}`).font = { name: 'Arial', size: 12, bold: true };
+    r++;
+
+    // Subtitle
+    ws2.mergeCells(`A${r}:J${r}`);
+    setCell(r, 1, '(To be submitted in Triplicate along with Attested Photostat copies of savings Mentioned in Item No. G)', { align: 'center', border: false, small: true });
+    ws2.getCell(`A${r}`).font = { name: 'Arial', size: 9, italic: true };
+    r++;
+
+    // Employee Info - Bold and properly arranged
+    ws2.mergeCells(`A${r}:E${r}`);
+    setCell(r, 1, `Name: ${empName}`, { bold: true, border: false });
+    ws2.mergeCells(`F${r}:J${r}`);
+    setCell(r, 6, `Designation: ${empDesig}`, { bold: true, border: false });
+    r++;
+
+    ws2.mergeCells(`A${r}:E${r}`);
+    setCell(r, 1, `Employee ID: ${empId}`, { bold: true, border: false });
+    ws2.mergeCells(`F${r}:J${r}`);
+    setCell(r, 6, `PAN: ${empPan}`, { bold: true, border: false });
+    r++;
+
+    // New Regime header
+    ws2.mergeCells(`A${r}:G${r}`);
+    setCell(r, 1, '', { border: false });
+    setCell(r, 4, 'New Regime (115BAC)', { bold: true, border: false });
+    setCell(r, 8, '', { border: false });
+    setCell(r, 9, 'Rs.', { bold: true, align: 'center', border: false });
+    setCell(r, 10, 'Rs.', { bold: true, align: 'center', border: false });
+    r++;
+
+    // Calculate all values
+    const grossIncome = d.grossIncome;
+    const standardDed = 75000;
+    const balanceAfterStd = grossIncome - standardDed;
+    const hraExempt = taxInputs.hraExempt || 0;
+    const ceaExempt = taxInputs.childEduAllow || 0;
+    const convExempt = taxInputs.conveyanceAllow || 0;
+    const totalExempt = hraExempt + ceaExempt + convExempt;
+    const incomeFromSalary = balanceAfterStd - totalExempt;
+    const houseProperty = taxInputs.housePropertyIncome || 0;
+    const totalAfterHP = incomeFromSalary + houseProperty;
+    const homeLoanInt = Math.min(taxInputs.homeLoanInterest || 0, 200000);
+    const balanceAfterLoan = totalAfterHP - homeLoanInt;
+    const otherIncome = taxInputs.otherIncome || 0;
+    const grossTotalIncome = balanceAfterLoan + otherIncome;
+    const gpfContrib = d.gpfTotal || 0;
+    const gisContrib = d.gisTotal || 0;
+    const nps80ccd2 = taxInputs.nps80ccd2 || 0;
+    const taxableIncome = d.taxableIncomeRounded;
+    
+    const slab1 = Math.min(taxableIncome, 400000);
+    const slab2 = Math.min(Math.max(taxableIncome - 400000, 0), 400000);
+    const slab3 = Math.min(Math.max(taxableIncome - 800000, 0), 400000);
+    const slab4 = Math.min(Math.max(taxableIncome - 1200000, 0), 400000);
+    const slab5 = Math.min(Math.max(taxableIncome - 1600000, 0), 400000);
+    const slab6 = Math.min(Math.max(taxableIncome - 2000000, 0), 400000);
+    const slab7 = Math.max(taxableIncome - 2400000, 0);
+    
+    const tax2 = Math.round(slab2 * 0.05);
+    const tax3 = Math.round(slab3 * 0.10);
+    const tax4 = Math.round(slab4 * 0.15);
+    const tax5 = Math.round(slab5 * 0.20);
+    const tax6 = Math.round(slab6 * 0.25);
+    const tax7 = Math.round(slab7 * 0.30);
+    const totalTaxBeforeRebate = tax2 + tax3 + tax4 + tax5 + tax6 + tax7;
+    const rebate87a = taxableIncome <= 1200000 ? totalTaxBeforeRebate : 0;
+    const taxPayable = totalTaxBeforeRebate - rebate87a;
+    const eduCess = Math.round(taxPayable * 0.04);
+    const totalTaxPayable = taxPayable + eduCess;
+    const taxDeducted = d.taxDeducted;
+    const balanceRefund = taxDeducted - totalTaxPayable;
+
+    // Helper for standard rows
+    const addStdRow = (sec, sub, desc, label, val1, val2, opts = {}) => {
+      setCell(r, 1, sec, { bold: opts.header, fill: opts.fill });
+      setCell(r, 2, sub, { fill: opts.fill });
+      ws2.mergeCells(`C${r}:H${r}`);
+      setCell(r, 3, desc, { bold: opts.header, fill: opts.fill, small: opts.small, wrap: opts.wrap });
+      setCell(r, 9, val1 === 0 ? ' - ' : (val1 || ''), { align: 'center', fill: opts.fill, numFmt: val1 && val1 !== ' - ' ? '#,##0' : undefined });
+      setCell(r, 10, val2 === 0 ? ' - ' : (val2 || ''), { align: val2 === ' - ' || val2 === 0 ? 'center' : 'right', fill: opts.fill, numFmt: val2 && val2 !== ' - ' ? '#,##0' : undefined, bold: opts.boldVal });
+      r++;
+    };
+
+    // Section A
+    ws2.mergeCells(`C${r}:F${r}`);
+    setCell(r, 1, 'A.', { bold: true, fill: 'FFE9ECEF' });
+    setCell(r, 2, '', { fill: 'FFE9ECEF' });
+    setCell(r, 3, 'Salary and Other Benefits:', { bold: true, fill: 'FFE9ECEF' });
+    ws2.mergeCells(`G${r}:H${r}`);
+    setCell(r, 7, 'Gross Income', { bold: true, align: 'right', fill: 'FFE9ECEF' });
+    setCell(r, 9, '', { fill: 'FFE9ECEF' });
+    setCell(r, 10, grossIncome, { bold: true, align: 'right', fill: 'FFE9ECEF', numFmt: '#,##0' });
+    r++;
+
+    ws2.mergeCells(`C${r}:F${r}`);
+    setCell(r, 1, '', {});
+    setCell(r, 2, '', {});
+    setCell(r, 3, 'Standard Deduction', {});
+    ws2.mergeCells(`G${r}:H${r}`);
+    setCell(r, 7, 'Less', { align: 'right' });
+    setCell(r, 9, '', {});
+    setCell(r, 10, standardDed, { align: 'right', numFmt: '#,##0' });
+    r++;
+
+    ws2.mergeCells(`C${r}:F${r}`);
+    setCell(r, 1, '', {});
+    setCell(r, 2, '', {});
+    setCell(r, 3, '', {});
+    ws2.mergeCells(`G${r}:H${r}`);
+    setCell(r, 7, 'Balance', { bold: true, align: 'right' });
+    setCell(r, 9, '', {});
+    setCell(r, 10, balanceAfterStd, { bold: true, align: 'right', numFmt: '#,##0' });
+    r++;
+
+    // Section B
+    addStdRow('B.', '', 'Less : Income exempt u/s 10', '', '', '', { header: true, fill: 'FFE9ECEF' });
+    addStdRow('', '1', 'House Rent Allowance', '', hraExempt || ' - ', '');
+    addStdRow('', '2', 'Children Education Allowance u/s 10(14)(ii) [100Rs/Child/Month Max:2400Rs.]', '', ceaExempt || ' - ', '', { small: true });
+    addStdRow('', '3', 'Fixed / Conveyance Allowance (Subject to actual expenditure)', '', convExempt || ' - ', '');
+    
+    ws2.mergeCells(`C${r}:F${r}`);
+    setCell(r, 1, '', {});
+    setCell(r, 2, '', {});
+    setCell(r, 3, '', {});
+    ws2.mergeCells(`G${r}:H${r}`);
+    setCell(r, 7, 'Total', { bold: true, align: 'right' });
+    setCell(r, 9, totalExempt || ' - ', { align: 'center' });
+    setCell(r, 10, totalExempt || ' - ', { align: totalExempt ? 'right' : 'center', numFmt: totalExempt ? '#,##0' : undefined });
+    r++;
+
+    ws2.mergeCells(`C${r}:F${r}`);
+    setCell(r, 1, '', {});
+    setCell(r, 2, '', {});
+    setCell(r, 3, '', {});
+    ws2.mergeCells(`G${r}:H${r}`);
+    setCell(r, 7, 'Income from Salary', { bold: true, align: 'right' });
+    setCell(r, 9, '', {});
+    setCell(r, 10, incomeFromSalary, { bold: true, align: 'right', numFmt: '#,##0' });
+    r++;
+
+    // Section C
+    addStdRow('C.', '', 'Add : Income from House Property', '', '', houseProperty || ' - ');
+    
+    ws2.mergeCells(`C${r}:F${r}`);
+    setCell(r, 1, '', {});
+    setCell(r, 2, '', {});
+    setCell(r, 3, '', {});
+    ws2.mergeCells(`G${r}:H${r}`);
+    setCell(r, 7, 'Total', { bold: true, align: 'right' });
+    setCell(r, 9, '', {});
+    setCell(r, 10, totalAfterHP, { bold: true, align: 'right', numFmt: '#,##0' });
+    r++;
+
+    // Section D
+    addStdRow('D.', '', 'Less : Interest Paid for self occupied house (up to Rs.2,00,000)', '', '', '', { small: true });
+    addStdRow('', '', '(Rs. 2,00,000/- if construction completed from borrowed capital after 2018-19)', '', '', homeLoanInt || ' - ', { small: true });
+    
+    ws2.mergeCells(`C${r}:F${r}`);
+    setCell(r, 1, '', {});
+    setCell(r, 2, '', {});
+    setCell(r, 3, '', {});
+    ws2.mergeCells(`G${r}:H${r}`);
+    setCell(r, 7, 'Balance', { bold: true, align: 'right' });
+    setCell(r, 9, '', {});
+    setCell(r, 10, balanceAfterLoan, { bold: true, align: 'right', numFmt: '#,##0' });
+    r++;
+
+    // Section E
+    addStdRow('E.', '', 'Add : Income from other sources (interest from Bank, deposits, investments)', '', '', otherIncome || ' - ');
+
+    // Section F
+    addStdRow('F.', '', 'Gross Total Income', '', '', grossTotalIncome, { header: true, fill: 'FFFFF3CD', boldVal: true });
+
+    // Section G
+    addStdRow('G.', '', 'Less : Deduction u/s 80C to 80CCF (Savings & Investments during the year)', '', '', '', { header: true, fill: 'FFE9ECEF' });
+    addStdRow('', 'i)', 'GPF/PRAN - Contribution towards Provident Fund', '', gpfContrib || ' - ', '');
+    addStdRow('', 'ii)', 'GIS - Recovery towards Group Insurance Scheme', '', gisContrib || ' - ', '');
+    addStdRow('', 'iii)', 'LIC - Life Insurance Premium Payment', '', ' - ', '');
+    addStdRow('', 'iv)', 'ULIP - Unit-Linked Insurance Plan (Jeevan Dhara, Akshay, Dhan Raksha)', '', ' - ', '', { small: true });
+    addStdRow('', 'v)', 'Repayment of House Loan (Principal) /Stamp Duty (Max: 1,50,000)', '', ' - ', '');
+    addStdRow('', 'vi)', 'Tuition Fee (Maximum for 2 children)', '', ' - ', '');
+    addStdRow('', 'vii)', 'Investment in NSC (VIII Issue)', '', ' - ', '');
+    addStdRow('', 'viii)', 'Accrued Interest on NSC (VIII issue) Excl. last year\'s interest', '', ' - ', '', { small: true });
+    addStdRow('', 'ix)', 'PPF', '', ' - ', '');
+    addStdRow('', '', 'Total (Limited to Rs. 1,50,000)', '', ' - ', '', { bold: true });
+    addStdRow('', 'x)', 'NPS (New Pension Scheme) u/s 80CCD (1B)', '', ' - ', '');
+    addStdRow('', 'xi)', 'NPS (New Pension Scheme) u/s 80CCD (2)', '', nps80ccd2 || ' - ', '');
+    
+    ws2.mergeCells(`C${r}:F${r}`);
+    setCell(r, 1, '', {});
+    setCell(r, 2, '', {});
+    setCell(r, 3, '', {});
+    ws2.mergeCells(`G${r}:H${r}`);
+    setCell(r, 7, 'Total =', { bold: true, align: 'right' });
+    setCell(r, 9, ' - ', { align: 'center' });
+    setCell(r, 10, ' - ', { align: 'center' });
+    r++;
+
+    // Section H
+    addStdRow('H.', '', 'Less : Deductions u/s 80D to 80U', '', '', '', { header: true, fill: 'FFE9ECEF' });
+    addStdRow('', '(i)', 'Health Insurance u/s 80D (25,000-55,000/5,000)', '', ' - ', '');
+    addStdRow('', '(ii)', 'Bank Interest on Saving Account u/s 80TTA (Maximum 10,000)', '', ' - ', '');
+    addStdRow('', '(iii)', 'Interest on loan for Higher Education u/s 80E', '', ' - ', '');
+    addStdRow('', '(iv)', 'Donation to Charitable Institution u/s 80G', '', ' - ', '');
+    addStdRow('', '(v)', 'Ded. for Person with disability u/s 80U (75,000/1,25,000)', '', ' - ', '');
+    
+    ws2.mergeCells(`C${r}:F${r}`);
+    setCell(r, 1, '', {});
+    setCell(r, 2, '', {});
+    setCell(r, 3, '', {});
+    ws2.mergeCells(`G${r}:H${r}`);
+    setCell(r, 7, 'Total=', { bold: true, align: 'right' });
+    setCell(r, 9, ' - ', { align: 'center' });
+    setCell(r, 10, taxableIncome, { bold: true, align: 'right', numFmt: '#,##0' });
+    r++;
+
+    // Section I
+    addStdRow('I.', '', 'Taxable Income (Rounded off to nearest ten rupees)', '', '', taxableIncome, { header: true, fill: 'FFFFF3CD', boldVal: true });
+
+    // Section J - Tax Computation (proper 6 column structure with consistent last columns)
+    setCell(r, 1, 'J.', { bold: true, fill: 'FFE9ECEF' });
+    ws2.mergeCells(`B${r}:C${r}`);
+    setCell(r, 2, 'Computation of Tax', { bold: true, fill: 'FFE9ECEF' });
+    ws2.mergeCells(`D${r}:E${r}`);
+    setCell(r, 4, 'Rate', { bold: true, align: 'center', fill: 'FFE9ECEF' });
+    ws2.mergeCells(`F${r}:G${r}`);
+    setCell(r, 6, 'Amount', { bold: true, align: 'center', fill: 'FFE9ECEF' });
+    setCell(r, 8, 'Tax', { bold: true, align: 'center', fill: 'FFE9ECEF' });
+    setCell(r, 9, '', { fill: 'FFE9ECEF' });
+    setCell(r, 10, '', { fill: 'FFE9ECEF' });
+    r++;
+
+    const addTaxSlab = (num, desc, rate, amount, tax) => {
+      setCell(r, 1, '', {});
+      ws2.mergeCells(`B${r}:C${r}`);
+      setCell(r, 2, `${num} ${desc}`, {});
+      ws2.mergeCells(`D${r}:E${r}`);
+      setCell(r, 4, rate, { align: 'center' });
+      ws2.mergeCells(`F${r}:G${r}`);
+      // Handle amount - check for valid number
+      const amtVal = (typeof amount === 'number' && !isNaN(amount) && amount > 0) ? amount : '';
+      setCell(r, 6, amtVal, { align: 'right', numFmt: amtVal ? '#,##0' : undefined });
+      // Handle tax - check for valid number and NaN
+      let taxVal = '';
+      if (tax === 0) {
+        taxVal = 'NIL';
+      } else if (typeof tax === 'number' && !isNaN(tax) && tax > 0) {
+        taxVal = tax;
+      } else if (tax === ' - ') {
+        taxVal = ' - ';
+      }
+      setCell(r, 8, taxVal, { align: taxVal === 'NIL' || taxVal === ' - ' || taxVal === '' ? 'center' : 'right', numFmt: typeof taxVal === 'number' ? '#,##0' : undefined });
+      setCell(r, 9, '', {}); // Blank - consistent with other sections
+      setCell(r, 10, '', {}); // Blank - consistent with other sections
+      r++;
+    };
+
+    addTaxSlab('i)', 'On First Rs. 4,00,000', 'NIL', slab1 > 0 ? slab1 : 0, 0);
+    addTaxSlab('ii)', 'Rs. 4,00,001 to Rs. 8,00,000', '5%', slab2 > 0 ? slab2 : '', slab2 > 0 ? tax2 : '');
+    addTaxSlab('iii)', 'Rs. 8,00,001 to Rs. 12,00,000', '10%', slab3 > 0 ? slab3 : '', slab3 > 0 ? tax3 : '');
+    addTaxSlab('iv)', 'Rs. 12,00,001 to Rs. 16,00,000', '15%', slab4 > 0 ? slab4 : '', slab4 > 0 ? tax4 : '');
+    addTaxSlab('v)', 'Rs. 16,00,001 to Rs. 20,00,000', '20%', slab5 > 0 ? slab5 : '', slab5 > 0 ? tax5 : '');
+    addTaxSlab('vi)', 'Rs. 20,00,001 to Rs. 24,00,000', '25%', slab6 > 0 ? slab6 : '', slab6 > 0 ? tax6 : '');
+    addTaxSlab('vii)', 'Rs. 24,00,001 and above', '30%', slab7 > 0 ? slab7 : '', slab7 > 0 ? tax7 : ' - ');
+
+    // Tax Rebate row
+    setCell(r, 1, '', {});
+    ws2.mergeCells(`B${r}:G${r}`);
+    setCell(r, 2, 'Tax Rebate Under Section 87a (Taxable Income ≤ 12 Lakh)', {});
+    setCell(r, 8, rebate87a > 0 ? -rebate87a : '', { align: 'right', numFmt: rebate87a > 0 ? '#,##0' : undefined });
+    setCell(r, 9, '', {});
+    setCell(r, 10, '', {});
+    r++;
+
+    // TAX PAYABLE row
+    setCell(r, 1, '', { bold: true });
+    ws2.mergeCells(`B${r}:C${r}`);
+    setCell(r, 2, 'TAX PAYABLE', { bold: true });
+    ws2.mergeCells(`D${r}:E${r}`);
+    setCell(r, 4, 'Total', { bold: true, align: 'center' });
+    ws2.mergeCells(`F${r}:G${r}`);
+    setCell(r, 6, '', {});
+    setCell(r, 8, taxPayable, { bold: true, align: 'right', numFmt: '#,##0' });
+    setCell(r, 9, '', {});
+    setCell(r, 10, taxPayable, { bold: true, align: 'right', numFmt: '#,##0' });
+    r++;
+    // Section K
+    addStdRow('K', '', 'Education Cess & Higher Education Cess @ 4% of Above', '', '', eduCess, { boldVal: true });
+
+    // Section L
+    addStdRow('L', '', 'Total Tax Payable (Item No. J + K)', '', '', totalTaxPayable, { header: true, fill: 'FF28A745', boldVal: true });
+    ws2.getCell(`J${r-1}`).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+
+    // Section M
+    addStdRow('M', '', 'Tax deducted at source (enclose certificates issued u/s 203)', '', '', taxDeducted);
+
+    // Section N
+    const isRefund = balanceRefund > 0;
+    addStdRow('N', '', isRefund ? 'Balance to be refunded (Item No. M - L)' : 'Balance Tax Payable (Item No. L - M)', '', '', Math.abs(balanceRefund), { header: true, fill: isRefund ? 'FFD4EDDA' : 'FFF8D7DA', boldVal: true });
+
+    // Verification
+    r++;
+    ws2.mergeCells(`A${r}:J${r}`);
+    setCell(r, 1, 'Verification', { bold: true, border: false });
+    r++;
+
+    ws2.mergeCells(`A${r}:J${r}`);
+    setCell(r, 1, `I, ${empName} do hereby declare that what is stated above is true to the best of my knowledge and belief. Verified today, the _____ day of _____________ ${fy.split('-')[0]}`, { border: false, small: true });
+    r++;
+    r++;
+
+    setCell(r, 1, 'Checked by', { border: false });
+    ws2.mergeCells(`H${r}:J${r}`);
+    setCell(r, 8, 'Signature of Employee', { align: 'right', border: false });
+
+    // Generate and download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `Salary_Tax_${empName || 'Employee'}_${fy}.xlsx`);
+
+    hideLoading();
+    document.getElementById('status').textContent = '✅ Excel exported successfully!';
+    document.getElementById('status').className = 'status success';
+  } catch (err) {
+    hideLoading();
+    console.error(err);
+    alert('Error generating Excel: ' + err.message);
+  }
+}
+
+// ========== WORD EXPORT (docx - Exact Format) ==========
+async function exportToWord() {
+  showLoading('Generating Word document...');
+  
+  try {
+    const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, WidthType, BorderStyle, AlignmentType, PageOrientation, convertInchesToTwip, VerticalAlign } = docx;
+    
+    const totals = calculateTotals();
+    const schoolName = document.getElementById('schoolName').value;
+    const schoolAddress = document.getElementById('schoolAddress').value;
+    const empName = document.getElementById('empName').value;
+    const empDesig = document.getElementById('empDesig').value;
+    const empId = document.getElementById('empId').value;
+    const empPan = document.getElementById('empPan').value;
+    const empDept = document.getElementById('empDept').value;
+    const fy = document.getElementById('empFY').value;
+    const d = calculatedTaxData;
+
+    const thinBorder = { style: BorderStyle.SINGLE, size: 1, color: "000000" };
+    const borders = { top: thinBorder, bottom: thinBorder, left: thinBorder, right: thinBorder };
+    const noBorders = { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } };
+
+    // Calculate all values
+    const grossIncome = d.grossIncome;
+    const standardDed = 75000;
+    const balanceAfterStd = grossIncome - standardDed;
+    const hraExempt = taxInputs.hraExempt || 0;
+    const ceaExempt = taxInputs.childEduAllow || 0;
+    const convExempt = taxInputs.conveyanceAllow || 0;
+    const totalExempt = hraExempt + ceaExempt + convExempt;
+    const incomeFromSalary = balanceAfterStd - totalExempt;
+    const houseProperty = taxInputs.housePropertyIncome || 0;
+    const totalAfterHP = incomeFromSalary + houseProperty;
+    const homeLoanInt = Math.min(taxInputs.homeLoanInterest || 0, 200000);
+    const balanceAfterLoan = totalAfterHP - homeLoanInt;
+    const otherIncome = taxInputs.otherIncome || 0;
+    const grossTotalIncome = balanceAfterLoan + otherIncome;
+    const gpfContrib = d.gpfTotal || 0;
+    const gisContrib = d.gisTotal || 0;
+    const nps80ccd2 = taxInputs.nps80ccd2 || 0;
+    const taxableIncome = d.taxableIncomeRounded;
+    
+    const slab1 = Math.min(taxableIncome, 400000);
+    const slab2 = Math.min(Math.max(taxableIncome - 400000, 0), 400000);
+    const slab3 = Math.min(Math.max(taxableIncome - 800000, 0), 400000);
+    const slab4 = Math.min(Math.max(taxableIncome - 1200000, 0), 400000);
+    const slab5 = Math.min(Math.max(taxableIncome - 1600000, 0), 400000);
+    const slab6 = Math.min(Math.max(taxableIncome - 2000000, 0), 400000);
+    const slab7 = Math.max(taxableIncome - 2400000, 0);
+    
+    const tax2 = Math.round(slab2 * 0.05);
+    const tax3 = Math.round(slab3 * 0.10);
+    const tax4 = Math.round(slab4 * 0.15);
+    const tax5 = Math.round(slab5 * 0.20);
+    const tax6 = Math.round(slab6 * 0.25);
+    const tax7 = Math.round(slab7 * 0.30);
+    const totalTaxBeforeRebate = tax2 + tax3 + tax4 + tax5 + tax6 + tax7;
+    const rebate87a = taxableIncome <= 1200000 ? totalTaxBeforeRebate : 0;
+    const taxPayable = totalTaxBeforeRebate - rebate87a;
+    const eduCess = Math.round(taxPayable * 0.04);
+    const totalTaxPayable = taxPayable + eduCess;
+    const taxDeducted = d.taxDeducted;
+    const balanceRefund = taxDeducted - totalTaxPayable;
+    const isRefund = balanceRefund > 0;
+
+    // Cell helper
+    const cell = (text, opts = {}) => new TableCell({
+      children: [new Paragraph({
+        children: [new TextRun({ 
+          text: String(text), 
+          bold: opts.bold, 
+          size: opts.size || 20,
+          font: 'Arial',
+          color: opts.color
+        })],
+        alignment: opts.align || AlignmentType.LEFT
+      })],
+      borders: opts.noBorder ? noBorders : borders,
+      shading: opts.fill ? { fill: opts.fill } : undefined,
+      columnSpan: opts.colSpan,
+      verticalAlign: VerticalAlign.CENTER
+    });
+
+    // ===== SALARY TABLE =====
+    const salaryHeaders = ['S.No.', 'Month', 'Basic', 'HRA', 'DA', 'FMA', 'TOTAL', 'GPF(S)', 'GPF(O)', 'GIS', 'DED', 'ITAX'];
+    const salaryHeaderRow = new TableRow({
+      children: salaryHeaders.map(h => cell(h, { bold: true, size: 18, fill: '1E3C72', color: 'FFFFFF', align: AlignmentType.CENTER })),
+      tableHeader: true
+    });
+
+    const salaryDataRows = salaryData.map((row, idx) => new TableRow({
+      children: [
+        cell(String(idx + 1), { size: 18, align: AlignmentType.CENTER }),
+        cell(row.month, { size: 18 }),
+        cell(fmt(parseNum(row.basic)), { size: 18, align: AlignmentType.RIGHT }),
+        cell(fmt(parseNum(row.hra)), { size: 18, align: AlignmentType.RIGHT }),
+        cell(fmt(parseNum(row.ada)), { size: 18, align: AlignmentType.RIGHT }),
+        cell(fmt(parseNum(row.fma)), { size: 18, align: AlignmentType.RIGHT }),
+        cell(fmt(parseNum(row.total)), { size: 18, align: AlignmentType.RIGHT }),
+        cell(fmt(parseNum(row.gpfSub)), { size: 18, align: AlignmentType.RIGHT }),
+        cell(fmt(parseNum(row.gpfOpr)), { size: 18, align: AlignmentType.RIGHT }),
+        cell(fmt(parseNum(row.gis)), { size: 18, align: AlignmentType.RIGHT }),
+        cell(fmt(parseNum(row.totalDed)), { size: 18, align: AlignmentType.RIGHT }),
+        cell(fmt(parseNum(row.itax)), { size: 18, align: AlignmentType.RIGHT })
+      ]
+    }));
+
+    const salaryTotalRow = new TableRow({
+      children: [
+        cell('', { fill: 'FFF3CD' }),
+        cell('TOTAL', { bold: true, size: 18, fill: 'FFF3CD', align: AlignmentType.CENTER }),
+        cell(fmt(totals.basic), { bold: true, size: 18, fill: 'FFF3CD', align: AlignmentType.RIGHT }),
+        cell(fmt(totals.hra), { bold: true, size: 18, fill: 'FFF3CD', align: AlignmentType.RIGHT }),
+        cell(fmt(totals.ada), { bold: true, size: 18, fill: 'FFF3CD', align: AlignmentType.RIGHT }),
+        cell(fmt(totals.fma), { bold: true, size: 18, fill: 'FFF3CD', align: AlignmentType.RIGHT }),
+        cell(fmt(totals.total), { bold: true, size: 18, fill: 'FFF3CD', align: AlignmentType.RIGHT }),
+        cell(fmt(totals.gpfSub), { bold: true, size: 18, fill: 'FFF3CD', align: AlignmentType.RIGHT }),
+        cell(fmt(totals.gpfOpr), { bold: true, size: 18, fill: 'FFF3CD', align: AlignmentType.RIGHT }),
+        cell(fmt(totals.gis), { bold: true, size: 18, fill: 'FFF3CD', align: AlignmentType.RIGHT }),
+        cell(fmt(totals.totalDed), { bold: true, size: 18, fill: 'FFF3CD', align: AlignmentType.RIGHT }),
+        cell(fmt(totals.itax), { bold: true, size: 18, fill: 'FFF3CD', align: AlignmentType.RIGHT })
+      ]
+    });
+
+    const salaryTable = new Table({
+      rows: [salaryHeaderRow, ...salaryDataRows, salaryTotalRow],
+      width: { size: 100, type: WidthType.PERCENTAGE }
+    });
+
+    // ===== TAX TABLE - 5 main columns =====
+    const taxRows = [];
+    
+    // Helper for tax rows - 5 columns: A, B-C (merged desc), D, E (Rs.), F (Rs.)
+    const addTaxRow = (a, desc, label, val1, val2, opts = {}) => {
+      taxRows.push(new TableRow({
+        children: [
+          cell(a, { size: 20, bold: opts.header, fill: opts.fill }),
+          cell(desc, { size: opts.small ? 18 : 20, bold: opts.header, fill: opts.fill, colSpan: 2 }),
+          cell(label, { size: 20, bold: opts.header, fill: opts.fill, align: AlignmentType.RIGHT }),
+          cell(val1 === 0 ? ' - ' : (val1 || ''), { size: 20, fill: opts.fill, align: AlignmentType.CENTER }),
+          cell(val2 === 0 ? ' - ' : (val2 ? fmt(val2) : ''), { size: 20, bold: opts.boldVal, fill: opts.fill, align: val2 ? AlignmentType.RIGHT : AlignmentType.CENTER })
+        ]
+      }));
+    };
+
+    // Title rows (no border)
+    taxRows.push(new TableRow({
+      children: [
+        cell(`PERFORMA FOR CALCULATION OF INCOME TAX FOR THE YEAR  ${fy}`, { bold: true, size: 22, noBorder: true, colSpan: 6, align: AlignmentType.CENTER })
+      ]
+    }));
+
+    taxRows.push(new TableRow({
+      children: [
+        cell('(To be submitted in Triplicate along with Attested Photostat copies of savings Mentioned in Item No. G)', { size: 16, noBorder: true, colSpan: 6, align: AlignmentType.CENTER })
+      ]
+    }));
+
+    // Employee Info - Bold
+    taxRows.push(new TableRow({
+      children: [
+        cell(`Name: ${empName}`, { bold: true, size: 20, noBorder: true, colSpan: 3 }),
+        cell(`Designation: ${empDesig}`, { bold: true, size: 20, noBorder: true, colSpan: 3 })
+      ]
+    }));
+
+    taxRows.push(new TableRow({
+      children: [
+        cell(`Employee ID: ${empId}`, { bold: true, size: 20, noBorder: true, colSpan: 3 }),
+        cell(`PAN: ${empPan}`, { bold: true, size: 20, noBorder: true, colSpan: 3 })
+      ]
+    }));
+
+    // New Regime header
+    taxRows.push(new TableRow({
+      children: [
+        cell('', { noBorder: true, colSpan: 2 }),
+        cell('New Regime (115BAC)', { bold: true, size: 20, noBorder: true }),
+        cell('', { noBorder: true }),
+        cell('Rs.', { bold: true, size: 20, noBorder: true, align: AlignmentType.CENTER }),
+        cell('Rs.', { bold: true, size: 20, noBorder: true, align: AlignmentType.CENTER })
+      ]
+    }));
+
+    // Section A
+    addTaxRow('A.', 'Salary and Other Benefits:', 'Gross Income', '', grossIncome, { header: true, fill: 'E9ECEF', boldVal: true });
+    addTaxRow('', 'Standard Deduction', 'Less', '', standardDed);
+    addTaxRow('', '', 'Balance', '', balanceAfterStd, { boldVal: true });
+
+    // Section B
+    addTaxRow('B.', 'Less : Income exempt u/s 10', '', '', '', { header: true, fill: 'E9ECEF' });
+    addTaxRow('', '1. House Rent Allowance', '', hraExempt || ' - ', '');
+    addTaxRow('', '2. Children Education Allowance u/s 10(14)(ii) [100Rs/Child/Month Max:2400Rs.]', '', ceaExempt || ' - ', '', { small: true });
+    addTaxRow('', '3. Fixed / Conveyance Allowance (Subject to actual expenditure)', '', convExempt || ' - ', '');
+    addTaxRow('', '', 'Total', totalExempt || ' - ', totalExempt || ' - ');
+    addTaxRow('', '', 'Income from Salary', '', incomeFromSalary, { boldVal: true });
+
+    // Section C
+    addTaxRow('C.', 'Add : Income from House Property', '', '', houseProperty || ' - ');
+    addTaxRow('', '', 'Total', '', totalAfterHP, { boldVal: true });
+
+    // Section D
+    addTaxRow('D.', 'Less : Interest Paid for self occupied house (up to Rs.2,00,000)', '', '', '');
+    addTaxRow('', '(Rs. 2,00,000/- if construction completed from borrowed capital after 2018-19)', '', '', homeLoanInt || ' - ', { small: true });
+    addTaxRow('', '', 'Balance', '', balanceAfterLoan, { boldVal: true });
+
+    // Section E
+    addTaxRow('E.', 'Add : Income from other sources (interest from Bank, deposits, investments)', '', '', otherIncome || ' - ');
+
+    // Section F
+    addTaxRow('F.', 'Gross Total Income', '', '', grossTotalIncome, { header: true, fill: 'FFF3CD', boldVal: true });
+
+    // Section G
+    addTaxRow('G.', 'Less : Deduction u/s 80C to 80CCF (Savings & Investments during the year)', '', '', '', { header: true, fill: 'E9ECEF' });
+    addTaxRow('', 'i) GPF/PRAN - Contribution towards Provident Fund', '', gpfContrib || ' - ', '');
+    addTaxRow('', 'ii) GIS - Recovery towards Group Insurance Scheme', '', gisContrib || ' - ', '');
+    addTaxRow('', 'iii) LIC - Life Insurance Premium Payment', '', ' - ', '');
+    addTaxRow('', 'iv) ULIP - Unit-Linked Insurance Plan (Jeevan Dhara, Akshay, Dhan Raksha)', '', ' - ', '', { small: true });
+    addTaxRow('', 'v) Repayment of House Loan (Principal) /Stamp Duty (Max: 1,50,000)', '', ' - ', '');
+    addTaxRow('', 'vi) Tuition Fee (Maximum for 2 children)', '', ' - ', '');
+    addTaxRow('', 'vii) Investment in NSC (VIII Issue)', '', ' - ', '');
+    addTaxRow('', 'viii) Accrued Interest on NSC (VIII issue) Excl. last year\'s interest', '', ' - ', '', { small: true });
+    addTaxRow('', 'ix) PPF', '', ' - ', '');
+    addTaxRow('', 'Total (Limited to Rs. 1,50,000)', '', ' - ', '');
+    addTaxRow('', 'x) NPS (New Pension Scheme) u/s 80CCD (1B)', '', ' - ', '');
+    addTaxRow('', 'xi) NPS (New Pension Scheme) u/s 80CCD (2)', '', nps80ccd2 || ' - ', '');
+    addTaxRow('', '', 'Total =', ' - ', ' - ');
+
+    // Section H
+    addTaxRow('H.', 'Less : Deductions u/s 80D to 80U', '', '', '', { header: true, fill: 'E9ECEF' });
+    addTaxRow('', '(i) Health Insurance u/s 80D (25,000-55,000/5,000)', '', ' - ', '');
+    addTaxRow('', '(ii) Bank Interest on Saving Account u/s 80TTA (Maximum 10,000)', '', ' - ', '');
+    addTaxRow('', '(iii) Interest on loan for Higher Education u/s 80E', '', ' - ', '');
+    addTaxRow('', '(iv) Donation to Charitable Institution u/s 80G', '', ' - ', '');
+    addTaxRow('', '(v) Ded. for Person with disability u/s 80U (75,000/1,25,000)', '', ' - ', '');
+    addTaxRow('', '', 'Total=', ' - ', taxableIncome, { boldVal: true });
+
+    // Section I
+    addTaxRow('I.', 'Taxable Income (Rounded off to nearest ten rupees)', '', '', taxableIncome, { header: true, fill: 'FFF3CD', boldVal: true });
+
+    // Section J - Tax Computation (6 columns with proper structure)
+    taxRows.push(new TableRow({
+      children: [
+        cell('J.', { bold: true, size: 20, fill: 'E9ECEF' }),
+        cell('Computation of Tax', { bold: true, size: 20, fill: 'E9ECEF' }),
+        cell('Rate', { bold: true, size: 20, fill: 'E9ECEF', align: AlignmentType.CENTER }),
+        cell('Amount', { bold: true, size: 20, fill: 'E9ECEF', align: AlignmentType.CENTER }),
+        cell('Tax', { bold: true, size: 20, fill: 'E9ECEF', align: AlignmentType.CENTER }),
+        cell('', { bold: true, size: 20, fill: 'E9ECEF' }) // Blank last column for consistency
+      ]
+    }));
+
+    const addSlabRow = (num, desc, rate, amount, tax) => {
+      // Handle amount - check for valid number and NaN
+      let amtDisplay = '';
+      if (typeof amount === 'number' && !isNaN(amount) && amount > 0) {
+        amtDisplay = fmt(amount);
+      }
+      
+      // Handle tax - check for valid number and NaN
+      let taxDisplay = '';
+      let taxAlign = AlignmentType.CENTER;
+      if (tax === 0) {
+        taxDisplay = 'NIL';
+        taxAlign = AlignmentType.CENTER;
+      } else if (typeof tax === 'number' && !isNaN(tax) && tax > 0) {
+        taxDisplay = fmt(tax);
+        taxAlign = AlignmentType.RIGHT;
+      } else if (tax === ' - ') {
+        taxDisplay = ' - ';
+        taxAlign = AlignmentType.CENTER;
+      }
+      
+      taxRows.push(new TableRow({
+        children: [
+          cell('', { size: 20 }),
+          cell(`${num} ${desc}`, { size: 20 }),
+          cell(rate, { size: 20, align: AlignmentType.CENTER }),
+          cell(amtDisplay, { size: 20, align: AlignmentType.RIGHT }),
+          cell(taxDisplay, { size: 20, align: taxAlign }),
+          cell('', { size: 20 }) // Blank last column
+        ]
+      }));
+    };
+
+    addSlabRow('i)', 'On First Rs. 4,00,000', 'NIL', slab1 > 0 ? slab1 : 0, 0);
+    addSlabRow('ii)', 'Rs. 4,00,001 to Rs. 8,00,000', '5%', slab2 > 0 ? slab2 : '', slab2 > 0 ? tax2 : '');
+    addSlabRow('iii)', 'Rs. 8,00,001 to Rs. 12,00,000', '10%', slab3 > 0 ? slab3 : '', slab3 > 0 ? tax3 : '');
+    addSlabRow('iv)', 'Rs. 12,00,001 to Rs. 16,00,000', '15%', slab4 > 0 ? slab4 : '', slab4 > 0 ? tax4 : '');
+    addSlabRow('v)', 'Rs. 16,00,001 to Rs. 20,00,000', '20%', slab5 > 0 ? slab5 : '', slab5 > 0 ? tax5 : '');
+    addSlabRow('vi)', 'Rs. 20,00,001 to Rs. 24,00,000', '25%', slab6 > 0 ? slab6 : '', slab6 > 0 ? tax6 : '');
+    addSlabRow('vii)', 'Rs. 24,00,001 and above', '30%', slab7 > 0 ? slab7 : '', slab7 > 0 ? tax7 : ' - ');
+
+    // Tax Rebate row
+    taxRows.push(new TableRow({
+      children: [
+        cell('', { size: 20 }),
+        cell('Tax Rebate Under Section 87a (Taxable Income ≤ 12 Lakh)', { size: 20, colSpan: 3 }),
+        cell(rebate87a > 0 ? `(${fmt(rebate87a)})` : '', { size: 20, align: AlignmentType.RIGHT }),
+        cell('', { size: 20 }) // Blank last column
+      ]
+    }));
+
+    // TAX PAYABLE row
+    taxRows.push(new TableRow({
+      children: [
+        cell('', { bold: true, size: 20 }),
+        cell('TAX PAYABLE', { bold: true, size: 20 }),
+        cell('Total', { bold: true, size: 20, align: AlignmentType.CENTER }),
+        cell('', { bold: true, size: 20 }),
+        cell(fmt(taxPayable), { bold: true, size: 20, align: AlignmentType.RIGHT }),
+        cell(fmt(taxPayable), { bold: true, size: 20, align: AlignmentType.RIGHT })
+         // Or show taxPayable here too if needed
+      ]
+    }));
+
+    // K, L, M, N
+    addTaxRow('K', 'Education Cess & Higher Education Cess @ 4% of Above', '', '', eduCess, { boldVal: true });
+    addTaxRow('L', 'Total Tax Payable (Item No. J + K)', '', '', totalTaxPayable, { header: true, fill: '28A745', boldVal: true });
+    addTaxRow('M', 'Tax deducted at source (enclose certificates issued u/s 203)', '', '', taxDeducted);
+    addTaxRow('N', isRefund ? 'Balance to be refunded (Item No. M - L)' : 'Balance Tax Payable (Item No. L - M)', '', '', Math.abs(balanceRefund), { header: true, fill: isRefund ? 'D4EDDA' : 'F8D7DA', boldVal: true });
+
+    // Verification (with 1.5 line spacing, bold employee name, no visible borders)
+    taxRows.push(new TableRow({
+      children: [new TableCell({
+        children: [new Paragraph({
+          children: [new TextRun({ text: 'Verification', bold: true, size: 22, font: 'Arial' })],
+          spacing: { line: 360, after: 18 }
+        })],
+        borders: noBorders,
+        columnSpan: 6
+      })]
+    }));
+
+    taxRows.push(new TableRow({
+      children: [new TableCell({
+        children: [new Paragraph({
+          children: [
+            new TextRun({ text: 'I, ', size: 20, font: 'Arial' }),
+            new TextRun({ text: empName, bold: true, size: 20, font: 'Arial' }),
+            new TextRun({ text: ', do hereby declare that what is stated above is true to the best of my knowledge and belief. Verified today, the _____ day of _____________ ', size: 20, font: 'Arial' }),
+            new TextRun({ text: fy.split('-')[0] + '.', size: 20, font: 'Arial' })
+          ],
+          spacing: { line: 360, after: 18 }
+        })],
+        borders: noBorders,
+        columnSpan: 6
+      })]
+    }));
+
+    taxRows.push(new TableRow({
+      children: [
+        new TableCell({
+          children: [new Paragraph({
+            children: [new TextRun({ text: 'Checked by', size: 20, font: 'Arial' })],
+            spacing: { line: 360 }
+          })],
+          borders: noBorders,
+          columnSpan: 3
+        }),
+        new TableCell({
+          children: [new Paragraph({
+            children: [new TextRun({ text: 'Signature of Employee', size: 20, font: 'Arial' })],
+            alignment: AlignmentType.RIGHT,
+            spacing: { line: 360 }
+          })],
+          borders: noBorders,
+          columnSpan: 3
+        })
+      ]
+    }));
+
+    const taxTable = new Table({
+      rows: taxRows,
+      width: { size: 100, type: WidthType.PERCENTAGE }
+    });
+
+    // Create Document
+    const doc = new Document({
+      creator: 'Prof. O.P. Sheoran, CCS HAU Hisar',
+      sections: [
+        // Salary Statement (Landscape)
+        {
+          properties: {
+            page: { 
+              size: { orientation: PageOrientation.LANDSCAPE }, 
+              margin: { top: convertInchesToTwip(0.5), bottom: convertInchesToTwip(0.5), left: convertInchesToTwip(0.5), right: convertInchesToTwip(0.5) } 
+            }
+          },
+          children: [
+            new Paragraph({ children: [new TextRun({ text: 'Developed by: Prof. O.P. Sheoran, CCS HAU, Hisar', bold: true, size: 20, color: '1E3C72' })], alignment: AlignmentType.RIGHT }),
+            new Paragraph({ text: '' }),
+            new Paragraph({ children: [new TextRun({ text: schoolName, bold: true, size: 28 })], alignment: AlignmentType.CENTER }),
+            new Paragraph({ children: [new TextRun({ text: schoolAddress, size: 22 })], alignment: AlignmentType.CENTER }),
+            new Paragraph({ text: '' }),
+            new Paragraph({ children: [new TextRun({ text: `ANNUAL SALARY STATEMENT - FINANCIAL YEAR ${fy}`, bold: true, size: 24 })], alignment: AlignmentType.CENTER }),
+            new Paragraph({ text: '' }),
+            new Paragraph({ children: [
+              new TextRun({ text: `Name: `, bold: true, size: 20 }), new TextRun({ text: `${empName}    `, size: 20 }),
+              new TextRun({ text: `Designation: `, bold: true, size: 20 }), new TextRun({ text: `${empDesig}    `, size: 20 }),
+              new TextRun({ text: `ID: `, bold: true, size: 20 }), new TextRun({ text: `${empId}    `, size: 20 }),
+              new TextRun({ text: `PAN: `, bold: true, size: 20 }), new TextRun({ text: empPan, size: 20 })
+            ]}),
+            new Paragraph({ text: '' }),
+            salaryTable,
+            new Paragraph({ text: '' }),
+            new Paragraph({ children: [new TextRun({ text: '        Signature of DDO                                                                                              Signature of Employee', size: 20 })], alignment: AlignmentType.CENTER })
+          ]
+        },
+        // Tax Calculation (Portrait)
+        {
+          properties: {
+            page: { 
+              size: { orientation: PageOrientation.PORTRAIT }, 
+              margin: { top: convertInchesToTwip(0.4), bottom: convertInchesToTwip(0.4), left: convertInchesToTwip(0.5), right: convertInchesToTwip(0.5) } 
+            }
+          },
+          children: [
+            new Paragraph({ children: [new TextRun({ text: 'Developed by: Prof. O.P. Sheoran, CCS HAU, Hisar', bold: true, size: 18, color: '1E3C72' })], alignment: AlignmentType.RIGHT }),
+            taxTable
+          ]
+        }
+      ]
+    });
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `Salary_Tax_${empName || 'Employee'}_${fy}.docx`);
+
+    hideLoading();
+    document.getElementById('status').textContent = '✅ Word exported successfully!';
+    document.getElementById('status').className = 'status success';
+  } catch (err) {
+    hideLoading();
+    console.error(err);
+    alert('Error generating Word: ' + err.message);
+  }
+}
+// ========== EVENT LISTENERS ==========
+document.getElementById('btnParse').addEventListener('click', async () => {
+  const f = document.getElementById('file').files?.[0];
+  if (!f) { document.getElementById('status').textContent = "Choose a PDF first."; return; }
+  document.getElementById('status').textContent = "Parsing…";
+  try {
+    const buf = await f.arrayBuffer();
+    const rawLines = await extractLinesFromPdf(buf);
+    extractEmployeeInfo(rawLines);
+    const { blocks } = sliceBlocks(rawLines);
+    const records = blocks.map(parseBlock).filter(r => r.month && (r.total || r.ada || r.basic));
+    salaryData = records;
+    renderSalaryTable();
+    calculateTax();
+    document.getElementById('debug').textContent = JSON.stringify({ blocks: blocks.length, records: records.length }, null, 2);
+    document.getElementById('status').className = 'status success';
+    document.getElementById('status').textContent = `✅ Extracted ${records.length} records`;
+  } catch (err) {
+    document.getElementById('status').className = 'status error';
+    document.getElementById('status').textContent = '❌ Error: ' + err.message;
+  }
+});
+
+document.getElementById('btnAddRow').addEventListener('click', addRow);
+document.getElementById('btnRecalculate').addEventListener('click', () => { renderSalaryTable(); calculateTax(); });
+document.getElementById('btnExportExcel').addEventListener('click', exportToExcel);
+document.getElementById('btnExportWord').addEventListener('click', exportToWord);
+document.getElementById('empFY').addEventListener('change', calculateTax);
+
+renderSalaryTable();
+
+// ========== LOCAL STORAGE FUNCTIONS ==========
+
+// Save employee data
+const saveEmployeeData = () => {
+  const empName = document.getElementById('empName')?.value || '';
+  
+  if (!empName || empName.trim() === '') {
+    alert('Employee name is required to save!');
+    return false;
+  }
+  
+  const key = `taxData_${empName.trim().toLowerCase().replace(/\s+/g, '_')}`;
+  const allEmployees = JSON.parse(localStorage.getItem('taxEmployeeList') || '[]');
+  
+  // Add to employee list if not exists
+  if (!allEmployees.find(e => e.toLowerCase() === empName.trim().toLowerCase())) {
+    allEmployees.push(empName.trim());
+    localStorage.setItem('taxEmployeeList', JSON.stringify(allEmployees));
+  }
+  
+  // Collect ALL data from your actual form
+  const data = {
+    // School/Office Info
+    schoolName: document.getElementById('schoolName')?.value || '',
+    schoolAddress: document.getElementById('schoolAddress')?.value || '',
+    empFY: document.getElementById('empFY')?.value || '',
+    
+    // Employee Info
+    empName: empName.trim(),
+    empDesig: document.getElementById('empDesig')?.value || '',
+    empId: document.getElementById('empId')?.value || '',
+    empPan: document.getElementById('empPan')?.value || '',
+    empDept: document.getElementById('empDept')?.value || '',
+    
+    // Salary Data Array (the table data)
+    salaryData: salaryData,
+    
+    // Tax Inputs Object
+    taxInputs: taxInputs,
+    
+    // Timestamp
+    savedAt: new Date().toISOString()
+  };
+  
+  localStorage.setItem(key, JSON.stringify(data));
+  
+  // Debug - show what was saved
+  console.log('Saved data:', data);
+  console.log('Salary rows saved:', salaryData.length);
+  
+  alert(`Data saved for ${empName}!\n- ${salaryData.length} salary rows\n- Tax inputs included`);
+  populateEmployeeDropdown();
+  return true;
+};
+
+// Get list of all saved employees
+const getSavedEmployees = () => {
+  return JSON.parse(localStorage.getItem('taxEmployeeList') || '[]');
+};
+
+// Load employee data by name
+const loadEmployeeData = (empName) => {
+  if (!empName || empName.trim() === '') return null;
+  
+  const key = `taxData_${empName.trim().toLowerCase().replace(/\s+/g, '_')}`;
+  const data = localStorage.getItem(key);
+  
+  return data ? JSON.parse(data) : null;
+};
+
+// Delete employee data
+const deleteEmployeeData = (empName) => {
+  if (!empName || empName.trim() === '') return false;
+  
+  const key = `taxData_${empName.trim().toLowerCase().replace(/\s+/g, '_')}`;
+  localStorage.removeItem(key);
+  
+  // Remove from employee list
+  let allEmployees = JSON.parse(localStorage.getItem('taxEmployeeList') || '[]');
+  allEmployees = allEmployees.filter(name => name.toLowerCase() !== empName.trim().toLowerCase());
+  localStorage.setItem('taxEmployeeList', JSON.stringify(allEmployees));
+  
+  alert(`Data deleted for ${empName}`);
+  populateEmployeeDropdown();
+  return true;
+};
+
+// ========== UI INTEGRATION FUNCTIONS ==========
+
+// Populate dropdown with saved employees
+const populateEmployeeDropdown = () => {
+  const select = document.getElementById('employeeSelect');
+  if (!select) return;
+  
+  const employees = getSavedEmployees();
+  
+  // Clear existing options except first
+  select.innerHTML = '<option value="">-- Select Employee --</option>';
+  
+  // Add saved employees
+  employees.sort().forEach(name => {
+    const option = document.createElement('option');
+    option.value = name;
+    option.textContent = name;
+    select.appendChild(option);
+  });
+};
+
+// Save current form data (called by button)
+const saveCurrentEmployee = () => {
+  saveEmployeeData();
+};
+
+// Load selected employee data
+const loadSelectedEmployee = () => {
+  const select = document.getElementById('employeeSelect');
+  if (!select || !select.value) {
+    alert('Please select an employee first!');
+    return;
+  }
+  
+  const data = loadEmployeeData(select.value);
+  if (!data) {
+    alert('No data found for selected employee!');
+    return;
+  }
+  
+  // Debug - show what was loaded
+  console.log('Loading data:', data);
+  
+  // Populate School/Office Info
+  if (data.schoolName) document.getElementById('schoolName').value = data.schoolName;
+  if (data.schoolAddress) document.getElementById('schoolAddress').value = data.schoolAddress;
+  if (data.empFY) document.getElementById('empFY').value = data.empFY;
+  
+  // Populate Employee Info
+  if (data.empName) document.getElementById('empName').value = data.empName;
+  if (data.empDesig) document.getElementById('empDesig').value = data.empDesig;
+  if (data.empId) document.getElementById('empId').value = data.empId;
+  if (data.empPan) document.getElementById('empPan').value = data.empPan;
+  if (data.empDept) document.getElementById('empDept').value = data.empDept;
+  
+  // Restore Salary Data Array
+  if (data.salaryData && Array.isArray(data.salaryData)) {
+    salaryData = data.salaryData;
+    renderSalaryTable();
+    console.log('Restored salary rows:', salaryData.length);
+  }
+  
+  // Restore Tax Inputs Object
+  if (data.taxInputs && typeof data.taxInputs === 'object') {
+    taxInputs = { ...taxInputs, ...data.taxInputs };
+    console.log('Restored tax inputs:', taxInputs);
+  }
+  
+  // Recalculate tax with restored data
+  calculateTax();
+  
+  alert(`Data loaded for ${data.empName}!\n- ${salaryData.length} salary rows restored`);
+};
+
+// Delete selected employee
+const deleteSelectedEmployee = () => {
+  const select = document.getElementById('employeeSelect');
+  if (!select || !select.value) {
+    alert('Please select an employee first!');
+    return;
+  }
+  
+  if (confirm(`Are you sure you want to delete data for "${select.value}"?`)) {
+    deleteEmployeeData(select.value);
+  }
+};
+
+// Initialize dropdown on page load
+document.addEventListener('DOMContentLoaded', populateEmployeeDropdown);
+  <!-- Register Service Worker -->
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js')
+          .then(reg => console.log('Service Worker registered'))
+          .catch(err => console.log('Service Worker registration failed'));
+      });
+    }
+  </script>
+</body>
+</html>
